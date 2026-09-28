@@ -9,8 +9,11 @@ from colorama import init, Fore, Style
 
 init()  # Initialize colorama (needed for Windows)
 
-# Load variables from .env
-load_dotenv()
+# Load variables from the repository-local .env file so behavior is
+# consistent even when the script is started from another directory.
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+ENV_PATH = os.path.join(PROJECT_ROOT, ".env")
+load_dotenv(dotenv_path=ENV_PATH)
 
 # API URLs
 API_URL = "https://whatsapp-osint.p.rapidapi.com/wspic/b64"
@@ -306,11 +309,26 @@ def process_privacy_settings(phone: str, api_key: str):
     except Exception:
         print("ℹ️ Text response:", resp.text.strip())
 
+def get_api_key():
+    """Return the configured RapidAPI key or print a useful setup error."""
+    api_key = os.getenv("RAPIDAPI_KEY", "").strip()
+    if api_key:
+        return api_key
+
+    print("❌ RAPIDAPI_KEY is not configured.")
+    if os.path.exists(ENV_PATH):
+        print(f"   Found .env at: {ENV_PATH}")
+        print("   Add a non-empty RAPIDAPI_KEY value to that file.")
+    else:
+        print(f"   .env file not found at: {ENV_PATH}")
+        print("   Copy .env.example to .env, then set RAPIDAPI_KEY=your_key.")
+    return None
+
+
 def main():
     show_banner()
-    api_key = os.getenv("RAPIDAPI_KEY")
+    api_key = get_api_key()
     if not api_key:
-        print("❌ RAPIDAPI_KEY not found in .env")
         return
 
     show_menu()
